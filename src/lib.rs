@@ -51,8 +51,8 @@ impl<W: AsyncWrite + Unpin, T: Serialize + DeserializeOwned + Unpin> ReceivedMes
 
     /// Sends the given message as a reply to this one. There are two ways for the peer to receive this reply
     ///
-    /// 1. `.await` both layers of [OwnedWriteHalf::send] or [OwnedWriteHalf::send_timeout]
-    /// 2. They'll receive it as the return value of [OwnedWriteHalf::ask] or [OwnedWriteHalf::ask_timeout].
+    /// 1. `.await` both layers of [AsyncWriteConverse::send] or [AsyncWriteConverse::send_timeout]
+    /// 2. They'll receive it as the return value of [AsyncWriteConverse::ask] or [AsyncWriteConverse::ask_timeout].
     pub async fn reply(self, reply: T) -> Result<(), Error> {
         SinkExt::send(
             &mut *self.raw_write.lock().await,
@@ -72,7 +72,7 @@ struct ReplySender<T> {
     conversation_id: u64,
 }
 
-/// Errors which can occur on an `interprocess-converse` connection.
+/// Errors which can occur on an `async-io-converse` connection.
 #[derive(Debug)]
 pub enum Error {
     /// Error from `std::io`
@@ -141,7 +141,7 @@ pub fn new_duplex_connection<
     new_duplex_connection_with_limit(1024u64.pow(2), raw_read, raw_write)
 }
 
-/// Used to receive messages from the connected peer. ***You must drive this in order to receive replies on the [OwnedWriteHalf]***
+/// Used to receive messages from the connected peer. ***You must drive this in order to receive replies on [AsyncWriteConverse]***
 pub struct AsyncReadConverse<
     R: AsyncRead + Unpin,
     W: AsyncWrite + Unpin,
@@ -154,6 +154,16 @@ pub struct AsyncReadConverse<
 }
 
 impl<
+R: AsyncRead + Unpin,
+W: AsyncWrite + Unpin,
+T: Serialize + DeserializeOwned + Unpin,
+> AsyncReadConverse<R, W, T> {
+    pub fn inner(&self) -> &R {
+        self.raw.inner()
+    }
+}
+
+impl<
         R: AsyncRead + Unpin + Send + 'static,
         W: AsyncWrite + Unpin + Send + 'static,
         T: Serialize + DeserializeOwned + Unpin + Send + 'static,
@@ -163,7 +173,7 @@ impl<
     /// This allows you to receive replies to your messages, while completely ignoring any non-reply messages you get.
     ///
     /// If instead you'd like to see the non-reply messages then you'll need to drive the `Stream` implementation
-    /// for `OwnedReadHalf`.
+    /// for `AsyncReadConverse`.
     pub fn drive_forever(mut self) {
         tokio::spawn(async move { while StreamExt::next(&mut self).await.is_some() {} });
     }
@@ -232,6 +242,15 @@ pub struct AsyncWriteConverse<W: AsyncWrite + Unpin, T: Serialize + DeserializeO
     raw: Arc<Mutex<AsyncWriteTyped<W, InternalMessage<T>>>>,
     reply_data_sender: mpsc::UnboundedSender<ReplySender<T>>,
     next_id: u64,
+}
+
+impl<
+W: AsyncWrite + Unpin,
+T: Serialize + DeserializeOwned + Unpin,
+> AsyncWriteConverse<W, T> {
+    pub async fn with_inner<F: FnOnce(&W) -> R, R>(&self, f: F) -> R {
+        f(self.raw.lock().await.inner())
+    }
 }
 
 impl<W: AsyncWrite + Unpin, T: Serialize + DeserializeOwned + Unpin> AsyncWriteConverse<W, T> {
