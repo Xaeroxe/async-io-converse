@@ -102,6 +102,45 @@ impl From<async_io_typed::Error> for Error {
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
 
+pub fn new_duplex_connection_with_limit<
+    T: DeserializeOwned + Serialize + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
+>(
+    size_limit: u64,
+    raw_read: R,
+    raw_write: W,
+) -> (AsyncReadConverse<R, W, T>, AsyncWriteConverse<W, T>) {
+    let write = Arc::new(Mutex::new(AsyncWriteTyped::new_with_limit(
+        raw_write, size_limit,
+    )));
+    let write_clone = Arc::clone(&write);
+    let (reply_data_sender, reply_data_receiver) = mpsc::unbounded_channel();
+    let read = AsyncReadConverse {
+        raw: AsyncReadTyped::new_with_limit(raw_read, size_limit),
+        raw_write: write_clone,
+        reply_data_receiver,
+        pending_reply: Vec::new(),
+    };
+    let write = AsyncWriteConverse {
+        raw: write,
+        reply_data_sender,
+        next_id: 0,
+    };
+    (read, write)
+}
+
+pub fn new_duplex_connection<
+    T: DeserializeOwned + Serialize + Unpin,
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
+>(
+    raw_read: R,
+    raw_write: W,
+) -> (AsyncReadConverse<R, W, T>, AsyncWriteConverse<W, T>) {
+    new_duplex_connection_with_limit(1024u64.pow(2), raw_read, raw_write)
+}
+
 /// Used to receive messages from the connected peer. ***You must drive this in order to receive replies on the [OwnedWriteHalf]***
 pub struct AsyncReadConverse<
     R: AsyncRead + Unpin,
