@@ -105,14 +105,14 @@ impl From<async_io_typed::Error> for Error {
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Used to receive messages from the connected peer. ***You must drive this in order to receive replies on the [OwnedWriteHalf]***
-pub struct AsyncReadConverse<RW: AsyncRead + AsyncWrite + Unpin, T: Serialize + DeserializeOwned + Unpin> {
-    raw: AsyncReadTyped<RW, InternalMessage<T>>,
-    raw_write: Arc<Mutex<AsyncWriteTyped<RW, InternalMessage<T>>>>,
+pub struct AsyncReadConverse<R: AsyncRead + Unpin, W: AsyncWrite + Unpin, T: Serialize + DeserializeOwned + Unpin> {
+    raw: AsyncReadTyped<R, InternalMessage<T>>,
+    raw_write: Arc<Mutex<AsyncWriteTyped<W, InternalMessage<T>>>>,
     reply_data_receiver: mpsc::UnboundedReceiver<ReplySender<T>>,
     pending_reply: Vec<ReplySender<T>>,
 }
 
-impl<RW: AsyncRead + AsyncWrite + Unpin + Send + 'static, T: Serialize + DeserializeOwned + Unpin + Send + 'static> AsyncReadConverse<RW, T> {
+impl<R: AsyncRead + Unpin + Send + 'static, W: AsyncWrite + Unpin + Send + 'static, T: Serialize + DeserializeOwned + Unpin + Send + 'static> AsyncReadConverse<R, W, T> {
     /// Spawns a future onto the tokio runtime that will drive the receive mechanism.
     /// This allows you to receive replies to your messages, while completely ignoring any non-reply messages you get.
     ///
@@ -123,8 +123,8 @@ impl<RW: AsyncRead + AsyncWrite + Unpin + Send + 'static, T: Serialize + Deseria
     }
 }
 
-impl<RW: AsyncRead + AsyncWrite + Unpin, T: Serialize + DeserializeOwned + Unpin> Stream for AsyncReadConverse<RW, T> {
-    type Item = Result<ReceivedMessage<RW, T>, Error>;
+impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin, T: Serialize + DeserializeOwned + Unpin> Stream for AsyncReadConverse<R, W, T> {
+    type Item = Result<ReceivedMessage<W, T>, Error>;
 
     fn poll_next(self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let Self {
