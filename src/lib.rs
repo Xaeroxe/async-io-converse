@@ -1,4 +1,4 @@
-//#![doc = include_str!("../README.md")]
+#![doc = include_str!("../README.md")]
 
 use async_io_typed::{AsyncReadTyped, AsyncWriteTyped};
 use futures_io::{AsyncRead, AsyncWrite};

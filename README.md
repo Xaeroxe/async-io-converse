@@ -1,6 +1,11 @@
-# async-io-converse
+# async-io-converse [![Build Status]][actions] [![Latest Version]][crates.io]
 
-![ci status](https://github.com/Xaeroxe/async-io-converse/actions/workflows/rust.yml/badge.svg)
+[Build Status]: https://img.shields.io/github/actions/workflow/status/Xaeroxe/async-io-converse/rust.yml?branch=main
+[actions]: https://github.com/Xaeroxe/async-io-converse/actions?query=branch%3Amain
+[Latest Version]: https://img.shields.io/crates/v/async-io-converse.svg
+[crates.io]: https://crates.io/crates/async-io-converse
+
+[Documentation](https://docs.rs/async-io-converse)
 
 A wrapper over the [`async-io-typed`](https://github.com/Xaeroxe/async-io-typed) crate which allows
 [`serde`](https://github.com/serde-rs/serde) compatible types to be sent over any duplex connection that has types that implement
