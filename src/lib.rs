@@ -192,8 +192,9 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin, T: Serialize + DeserializeOwne
             ref raw_write,
         } = self.get_mut();
         loop {
-            return match Pin::new(&mut *raw).poll_next(cx) {
-                Poll::Ready(Some(Ok(i))) => {
+            match futures_core::ready!(Pin::new(&mut *raw).poll_next(cx)) {
+                Some(r) => {
+                    let i = r?;
                     while let Ok(reply_data) = reply_data_receiver.try_recv() {
                         pending_reply.push(reply_data);
                     }
@@ -217,19 +218,17 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin, T: Serialize + DeserializeOwne
                         !matches
                     });
                     if start_len == pending_reply.len() {
-                        Poll::Ready(Some(Ok(ReceivedMessage {
+                        return Poll::Ready(Some(Ok(ReceivedMessage {
                             message: Some(user_message.take().expect("infallible")),
                             conversation_id: i.conversation_id,
                             raw_write: Arc::clone(raw_write),
-                        })))
+                        })));
                     } else {
                         continue;
                     }
-                }
-                Poll::Ready(Some(Err(e))) => Poll::Ready(Some(Err(e.into()))),
-                Poll::Ready(None) => Poll::Ready(None),
-                Poll::Pending => Poll::Pending,
-            };
+                },
+                None => return Poll::Ready(None),
+            }
         }
     }
 }

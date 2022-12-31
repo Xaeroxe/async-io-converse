@@ -11,6 +11,7 @@ documentation = "https://docs.rs/async-io-converse/"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+futures-core = "0.3"
 futures-io = "0.3"
 futures-util = "0.3"
 async-io-typed = "1.0"
