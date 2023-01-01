@@ -22,3 +22,5 @@ serde = { version = "1.0", features = ["derive"] }
 [dev-dependencies]
 tokio = { version = "1.0", features = ["rt-multi-thread", "macros"]}
 rand = "0.8"
+futures-util = { version = "0.3", features = ["io"] }
+tokio-util = "0.7"

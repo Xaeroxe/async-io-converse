@@ -14,6 +14,9 @@ use std::{
 };
 use tokio::sync::{mpsc, oneshot, Mutex};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Deserialize, Serialize)]
 struct InternalMessage<T> {
     user_message: T,
@@ -153,11 +156,9 @@ pub struct AsyncReadConverse<
     pending_reply: Vec<ReplySender<T>>,
 }
 
-impl<
-R: AsyncRead + Unpin,
-W: AsyncWrite + Unpin,
-T: Serialize + DeserializeOwned + Unpin,
-> AsyncReadConverse<R, W, T> {
+impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin, T: Serialize + DeserializeOwned + Unpin>
+    AsyncReadConverse<R, W, T>
+{
     pub fn inner(&self) -> &R {
         self.raw.inner()
     }
@@ -226,7 +227,7 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin, T: Serialize + DeserializeOwne
                     } else {
                         continue;
                     }
-                },
+                }
                 None => return Poll::Ready(None),
             }
         }
@@ -243,10 +244,7 @@ pub struct AsyncWriteConverse<W: AsyncWrite + Unpin, T: Serialize + DeserializeO
     next_id: u64,
 }
 
-impl<
-W: AsyncWrite + Unpin,
-T: Serialize + DeserializeOwned + Unpin,
-> AsyncWriteConverse<W, T> {
+impl<W: AsyncWrite + Unpin, T: Serialize + DeserializeOwned + Unpin> AsyncWriteConverse<W, T> {
     pub async fn with_inner<F: FnOnce(&W) -> R, R>(&self, f: F) -> R {
         f(self.raw.lock().await.inner())
     }
