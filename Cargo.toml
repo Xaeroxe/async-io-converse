@@ -1,6 +1,6 @@
 [package]
 name = "async-io-converse"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Can conduct a conversation over any AsyncRead or AsyncWrite type with serde compatible types"
