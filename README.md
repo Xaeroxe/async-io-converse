@@ -13,12 +13,26 @@ A wrapper over the [`async-io-typed`](https://github.com/Xaeroxe/async-io-typed)
 
 ## Who needs this?
 
-Anyone who wishes to send messages between two processes that have a duplex I/O connection, and get replies to those messages.
+If you have two endpoints that need to communicate with each other and
+
+- You can establish some kind of duplex I/O connection between them (i.e. TCP, named pipes, or a unix socket)
+- You need clear message boundaries
+- You're not trying to conform to an existing wire format such as HTTP or protobufs. This crate uses a custom format.
+- The data you wish to send can be easily represented in a Rust type, and that type implements serde's `Deserialize` and `Serialize` traits.
+
+Then this crate might be useful to you!
+
+## Who doesn't need this?
+
+If the endpoints are in the same process then you should not use this crate. You're better served by existing async mpsc channels.
+Many crates provide async mpsc channels, including `futures` and `tokio`. Pick your favorite implementation. Additionally, if you're
+trying to interface with a process that doesn't have Rust code, and can't adopt a Rust portion, this crate will hurt much more than
+it will help. Consider using protobufs or JSON if Rust adoption is a blocker.
 
 ## Why shouldn't I just use `async-io-typed` directly?
 
-It depends on what you want to send! `async-io-typed` allows you to send Rust types. Specifically, types that are serde-compatible.
-`async-io-converse` then adds the ability to receive replies to your typed messages.
+`async-io-converse` is built on top of `async-io-typed` and provides the ability to create and send replies, which
+the peer can then act on. `async-io-converse` also requires a duplex connection, unlike `async-io-typed`.
 
 ## Contributing
 

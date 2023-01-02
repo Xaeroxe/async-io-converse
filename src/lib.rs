@@ -162,6 +162,15 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin, T: Serialize + DeserializeOwne
     pub fn inner(&self) -> &R {
         self.raw.inner()
     }
+
+    /// `AsyncReadConverse` keeps a memory buffer for receiving values which is the same size as the largest
+    /// message that's been received. If the message size varies a lot, you might find yourself wasting
+    /// memory space. This function will reduce the memory usage as much as is possible without impeding
+    /// functioning. Overuse of this function may cause excessive memory allocations when the buffer
+    /// needs to grow.
+    pub fn optimize_memory_usage(&mut self) {
+        self.raw.optimize_memory_usage()
+    }
 }
 
 impl<
@@ -246,6 +255,15 @@ pub struct AsyncWriteConverse<W: AsyncWrite + Unpin, T: Serialize + DeserializeO
 impl<W: AsyncWrite + Unpin, T: Serialize + DeserializeOwned + Unpin> AsyncWriteConverse<W, T> {
     pub async fn with_inner<F: FnOnce(&W) -> R, R>(&self, f: F) -> R {
         f(self.raw.lock().await.inner())
+    }
+
+    /// `AsyncWriteConverse` keeps a memory buffer for sending values which is the same size as the largest
+    /// message that's been sent. If the message size varies a lot, you might find yourself wasting
+    /// memory space. This function will reduce the memory usage as much as is possible without impeding
+    /// functioning. Overuse of this function may cause excessive memory allocations when the buffer
+    /// needs to grow.
+    pub async fn optimize_memory_usage(&mut self) {
+        self.raw.lock().await.optimize_memory_usage()
     }
 }
 
