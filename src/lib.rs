@@ -199,7 +199,6 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin, T: Serialize + DeserializeOwne
                     while let Ok(reply_data) = reply_data_receiver.try_recv() {
                         pending_reply.push(reply_data);
                     }
-                    let start_len = pending_reply.len();
                     let mut user_message = Some(i.user_message);
                     pending_reply.retain_mut(|pending_reply| {
                         if let Some(reply_sender) = pending_reply.reply_sender.as_ref() {
@@ -218,7 +217,7 @@ impl<R: AsyncRead + Unpin, W: AsyncWrite + Unpin, T: Serialize + DeserializeOwne
                         }
                         !matches
                     });
-                    if start_len == pending_reply.len() {
+                    if !i.is_reply {
                         return Poll::Ready(Some(Ok(ReceivedMessage {
                             message: Some(user_message.take().expect("infallible")),
                             conversation_id: i.conversation_id,
