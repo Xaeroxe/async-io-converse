@@ -164,8 +164,8 @@ pub enum TestMessage {
 async fn basic_dialogue() {
     let (server_write, client_read) = basic_channel();
     let (client_write, server_read) = basic_channel();
-    let (server_read, mut server_write) = new_duplex_connection(server_read, server_write);
-    let (mut client_read, _client_write) = new_duplex_connection(client_read, client_write);
+    let (server_read, mut server_write) = new_duplex_connection(true, server_read, server_write);
+    let (mut client_read, _client_write) = new_duplex_connection(true, client_read, client_write);
     server_read.drive_forever();
     tokio::spawn(async move {
         while let Some(message) = client_read.next().await {
@@ -204,9 +204,9 @@ async fn flurry_of_communication() {
             let (server_write, client_read) = basic_channel();
             let (client_write, server_read) = basic_channel();
             let (mut server_read, mut server_write) =
-                new_duplex_connection(server_read, server_write);
+                new_duplex_connection(true, server_read, server_write);
             let (mut client_read, mut client_write) =
-                new_duplex_connection(client_read, client_write);
+                new_duplex_connection(true, client_read, client_write);
             tokio::spawn(async move {
                 while let Some(message) = client_read.next().await {
                     let mut received_message = message.unwrap();
@@ -272,8 +272,8 @@ async fn flurry_of_communication() {
 async fn timeout_check() {
     let (server_write, client_read) = basic_channel();
     let (client_write, server_read) = basic_channel();
-    let (server_read, mut server_write) = new_duplex_connection(server_read, server_write);
-    let (mut client_read, _client_write) = new_duplex_connection(client_read, client_write);
+    let (server_read, mut server_write) = new_duplex_connection(true, server_read, server_write);
+    let (mut client_read, _client_write) = new_duplex_connection(true, client_read, client_write);
     server_read.drive_forever();
     tokio::spawn(async move {
         while let Some(message) = client_read.next().await {

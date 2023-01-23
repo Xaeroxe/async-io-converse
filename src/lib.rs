@@ -86,6 +86,17 @@ pub enum Error {
     ReceivedMessageTooLarge,
     /// A message was sent that exceeded the configured length limit
     SentMessageTooLarge,
+    ChecksumMismatch {
+        sent_checksum: u64,
+        computed_checksum: u64,
+    },
+    ProtocolVersionMismatch {
+        our_version: u64,
+        their_version: u64,
+    },
+    ChecksumHandshakeFailed {
+        checksum_value: u8,
+    },
     /// A reply wasn't received within the timeout specified
     Timeout,
     /// The read half was dropped, crippling the ability to receive replies.
@@ -99,6 +110,9 @@ impl From<async_io_typed::Error> for Error {
             async_io_typed::Error::Bincode(e) => Error::Bincode(e),
             async_io_typed::Error::ReceivedMessageTooLarge => Error::ReceivedMessageTooLarge,
             async_io_typed::Error::SentMessageTooLarge => Error::SentMessageTooLarge,
+            async_io_typed::Error::ChecksumMismatch { sent_checksum, computed_checksum } => Error::ChecksumMismatch { sent_checksum, computed_checksum },
+            async_io_typed::Error::ProtocolVersionMismatch { our_version, their_version } => Error::ProtocolVersionMismatch { our_version, their_version },
+            async_io_typed::Error::ChecksumHandshakeFailed { checksum_value } => Error::ChecksumHandshakeFailed { checksum_value },
         }
     }
 }
@@ -111,16 +125,17 @@ pub fn new_duplex_connection_with_limit<
     W: AsyncWrite + Unpin,
 >(
     size_limit: u64,
+    checksums_enabled: bool,
     raw_read: R,
     raw_write: W,
 ) -> (AsyncReadConverse<R, W, T>, AsyncWriteConverse<W, T>) {
     let write = Arc::new(Mutex::new(AsyncWriteTyped::new_with_limit(
-        raw_write, size_limit,
+        raw_write, size_limit, checksums_enabled,
     )));
     let write_clone = Arc::clone(&write);
     let (reply_data_sender, reply_data_receiver) = mpsc::unbounded_channel();
     let read = AsyncReadConverse {
-        raw: AsyncReadTyped::new_with_limit(raw_read, size_limit),
+        raw: AsyncReadTyped::new_with_limit(raw_read, size_limit, checksums_enabled),
         raw_write: write_clone,
         reply_data_receiver,
         pending_reply: Vec::new(),
@@ -138,10 +153,11 @@ pub fn new_duplex_connection<
     R: AsyncRead + Unpin,
     W: AsyncWrite + Unpin,
 >(
+    checksums_enabled: bool,
     raw_read: R,
     raw_write: W,
 ) -> (AsyncReadConverse<R, W, T>, AsyncWriteConverse<W, T>) {
-    new_duplex_connection_with_limit(1024u64.pow(2), raw_read, raw_write)
+    new_duplex_connection_with_limit(1024u64.pow(2), checksums_enabled, raw_read, raw_write)
 }
 
 /// Used to receive messages from the connected peer. ***You must drive this in order to receive replies on [AsyncWriteConverse]***
