@@ -213,13 +213,14 @@ impl<
         T: Serialize + DeserializeOwned + Unpin + Send + 'static,
     > AsyncReadConverse<R, W, T>
 {
-    /// Spawns a future onto the tokio runtime that will drive the receive mechanism.
-    /// This allows you to receive replies to your messages, while completely ignoring any non-reply messages you get.
+    /// Returns a future that will drive the receive mechanism. It's recommended to spawn this onto an `async`
+    /// runtime, such as `tokio`. This allows you to receive replies to your messages, while completely
+    /// ignoring any non-reply messages you get.
     ///
     /// If instead you'd like to see the non-reply messages then you'll need to drive the `Stream` implementation
     /// for `AsyncReadConverse`.
-    pub fn drive_forever(mut self) {
-        tokio::spawn(async move { while StreamExt::next(&mut self).await.is_some() {} });
+    pub async fn drive_forever(mut self) {
+        while StreamExt::next(&mut self).await.is_some() {}
     }
 }
 

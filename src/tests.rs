@@ -168,7 +168,7 @@ async fn basic_dialogue() {
         new_duplex_connection(ChecksumEnabled::Yes, server_read, server_write);
     let (mut client_read, _client_write) =
         new_duplex_connection(ChecksumEnabled::Yes, client_read, client_write);
-    server_read.drive_forever();
+    tokio::spawn(server_read.drive_forever());
     tokio::spawn(async move {
         while let Some(message) = client_read.next().await {
             let mut received_message = message.unwrap();
@@ -278,7 +278,7 @@ async fn timeout_check() {
         new_duplex_connection(ChecksumEnabled::Yes, server_read, server_write);
     let (mut client_read, _client_write) =
         new_duplex_connection(ChecksumEnabled::Yes, client_read, client_write);
-    server_read.drive_forever();
+    tokio::spawn(server_read.drive_forever());
     tokio::spawn(async move {
         while let Some(message) = client_read.next().await {
             let mut received_message = message.unwrap();
