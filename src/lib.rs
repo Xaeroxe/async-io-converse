@@ -103,6 +103,8 @@ pub enum Error {
     ReadHalfDropped,
 }
 
+pub use async_io_typed::ChecksumEnabled;
+
 impl From<async_io_typed::Error> for Error {
     fn from(e: async_io_typed::Error) -> Self {
         match e {
@@ -110,9 +112,23 @@ impl From<async_io_typed::Error> for Error {
             async_io_typed::Error::Bincode(e) => Error::Bincode(e),
             async_io_typed::Error::ReceivedMessageTooLarge => Error::ReceivedMessageTooLarge,
             async_io_typed::Error::SentMessageTooLarge => Error::SentMessageTooLarge,
-            async_io_typed::Error::ChecksumMismatch { sent_checksum, computed_checksum } => Error::ChecksumMismatch { sent_checksum, computed_checksum },
-            async_io_typed::Error::ProtocolVersionMismatch { our_version, their_version } => Error::ProtocolVersionMismatch { our_version, their_version },
-            async_io_typed::Error::ChecksumHandshakeFailed { checksum_value } => Error::ChecksumHandshakeFailed { checksum_value },
+            async_io_typed::Error::ChecksumMismatch {
+                sent_checksum,
+                computed_checksum,
+            } => Error::ChecksumMismatch {
+                sent_checksum,
+                computed_checksum,
+            },
+            async_io_typed::Error::ProtocolVersionMismatch {
+                our_version,
+                their_version,
+            } => Error::ProtocolVersionMismatch {
+                our_version,
+                their_version,
+            },
+            async_io_typed::Error::ChecksumHandshakeFailed { checksum_value } => {
+                Error::ChecksumHandshakeFailed { checksum_value }
+            }
         }
     }
 }
@@ -125,17 +141,19 @@ pub fn new_duplex_connection_with_limit<
     W: AsyncWrite + Unpin,
 >(
     size_limit: u64,
-    checksums_enabled: bool,
+    checksum_enabled: ChecksumEnabled,
     raw_read: R,
     raw_write: W,
 ) -> (AsyncReadConverse<R, W, T>, AsyncWriteConverse<W, T>) {
     let write = Arc::new(Mutex::new(AsyncWriteTyped::new_with_limit(
-        raw_write, size_limit, checksums_enabled,
+        raw_write,
+        size_limit,
+        checksum_enabled,
     )));
     let write_clone = Arc::clone(&write);
     let (reply_data_sender, reply_data_receiver) = mpsc::unbounded_channel();
     let read = AsyncReadConverse {
-        raw: AsyncReadTyped::new_with_limit(raw_read, size_limit, checksums_enabled),
+        raw: AsyncReadTyped::new_with_limit(raw_read, size_limit, checksum_enabled),
         raw_write: write_clone,
         reply_data_receiver,
         pending_reply: Vec::new(),
@@ -153,11 +171,11 @@ pub fn new_duplex_connection<
     R: AsyncRead + Unpin,
     W: AsyncWrite + Unpin,
 >(
-    checksums_enabled: bool,
+    checksum_enabled: ChecksumEnabled,
     raw_read: R,
     raw_write: W,
 ) -> (AsyncReadConverse<R, W, T>, AsyncWriteConverse<W, T>) {
-    new_duplex_connection_with_limit(1024u64.pow(2), checksums_enabled, raw_read, raw_write)
+    new_duplex_connection_with_limit(1024u64.pow(2), checksum_enabled, raw_read, raw_write)
 }
 
 /// Used to receive messages from the connected peer. ***You must drive this in order to receive replies on [AsyncWriteConverse]***

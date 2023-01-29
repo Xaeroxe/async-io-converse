@@ -1,6 +1,6 @@
 [package]
 name = "async-io-converse"
-version = "2.0.0"
+version = "3.0.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Can conduct a conversation over any AsyncRead or AsyncWrite type with serde compatible types"
@@ -14,7 +14,7 @@ documentation = "https://docs.rs/async-io-converse/"
 futures-core = "0.3"
 futures-io = "0.3"
 futures-util = "0.3"
-async-io-typed = "2.0"
+async-io-typed = "3.0"
 bincode = "1.3"
 tokio = { version = "1.0", features = ["time", "sync", "rt"] }
 serde = { version = "1.0", features = ["derive"] }
